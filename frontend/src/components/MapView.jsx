@@ -33,57 +33,49 @@ export default function MapView({ points, route, start, visitedIds, pickingStart
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const markersRef   = useRef([]);
+  const readyRef     = useRef(false); // true once source+layer exist
 
-  // Initialise map once
+  // ── Init map once ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (mapRef.current) return;
 
-    mapRef.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [19.94, 50.06], // Kraków default
+      center: [19.94, 50.06],
       zoom: 11,
       attributionControl: false,
     });
+    mapRef.current = map;
 
-    mapRef.current.addControl(
-      new mapboxgl.NavigationControl({ showCompass: false }),
-      "top-right"
-    );
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
 
-    mapRef.current.addControl(
-      new mapboxgl.AttributionControl({ compact: true }),
-      "bottom-right"
-    );
-
-    mapRef.current.on("click", (e) => {
-      if (mapRef.current._pickActive && mapRef.current._onPick) {
-        mapRef.current._onPick(e.lngLat);
-      }
+    map.on("click", (e) => {
+      if (map._pickActive && map._onPick) map._onPick(e.lngLat);
     });
 
-    mapRef.current.on("load", () => {
-      mapRef.current.addSource(ROUTE_SOURCE, {
+    map.on("load", () => {
+      map.addSource(ROUTE_SOURCE, {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
-
-      mapRef.current.addLayer({
+      map.addLayer({
         id: ROUTE_LAYER,
         type: "line",
         source: ROUTE_SOURCE,
         layout: { "line-join": "round", "line-cap": "round" },
         paint: {
           "line-color": "#FFD600",
-          "line-width": 3,
-          "line-opacity": 0.85,
-          "line-dasharray": [1, 0],
+          "line-width": 3.5,
+          "line-opacity": 0.9,
         },
       });
+      readyRef.current = true;
     });
   }, []);
 
-  // Sync pick mode into map instance
+  // ── Sync pick-mode cursor ──────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -92,98 +84,84 @@ export default function MapView({ points, route, start, visitedIds, pickingStart
     map.getCanvas().style.cursor = pickingStart ? "crosshair" : "";
   }, [pickingStart, onMapPick]);
 
-  // Update markers when points change (selection or route order)
+  // ── Unified draw: markers + route line ────────────────────────────────────
   const clearMarkers = useCallback(() => {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
   }, []);
 
-  useEffect(() => {
+  const drawAll = useCallback(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !readyRef.current) return;
 
-    const ready = () => {
-      clearMarkers();
+    // — Markers —
+    clearMarkers();
+    const displayPoints = route?.ordered ?? points;
+    const bounds = new mapboxgl.LngLatBounds();
 
-      const displayPoints = route?.ordered ?? points;
-      if (!displayPoints?.length) return;
-
-      const bounds = new mapboxgl.LngLatBounds();
-
-      // Start position marker
-      if (start) {
-        const el = makeMarkerEl("", true);
-        const popup = new mapboxgl.Popup({ offset: 10, closeButton: false }).setHTML(
+    if (start) {
+      const el = makeMarkerEl("", true);
+      new mapboxgl.Marker({ element: el })
+        .setLngLat([start.longitude, start.latitude])
+        .setPopup(new mapboxgl.Popup({ offset: 10, closeButton: false }).setHTML(
           `<div class="popup-name">📍 Start</div>
            <div class="popup-addr">${start.latitude.toFixed(5)}, ${start.longitude.toFixed(5)}</div>`
-        );
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([start.longitude, start.latitude])
-          .setPopup(popup)
-          .addTo(map);
-        markersRef.current.push(marker);
-        bounds.extend([start.longitude, start.latitude]);
-      }
+        ))
+        .addTo(map);
+      markersRef.current.push();
+      bounds.extend([start.longitude, start.latitude]);
+    }
 
-      displayPoints.forEach((p, i) => {
-        const isVisited = visitedIds?.has(p.id);
-        const el = makeMarkerEl(i + 1);
-        if (isVisited) {
-          el.style.background = "#363840";
-          el.style.color = "#6B7080";
-        }
+    (displayPoints ?? []).forEach((p, i) => {
+      const isVisited = visitedIds?.has(p.id);
+      const el = makeMarkerEl(i + 1);
+      if (isVisited) { el.style.background = "#363840"; el.style.color = "#6B7080"; }
 
-        const legInfo = route?.legs?.[i]
-          ? `<div class="popup-order">~${fmtDuration(route.legs[i].duration)} · ${fmtDist(route.legs[i].distance)}</div>`
-          : "";
+      const legHtml = route?.legs?.[i]
+        ? `<div class="popup-order">~${fmtDuration(route.legs[i].duration)} · ${fmtDist(route.legs[i].distance)}</div>`
+        : "";
 
-        const popup = new mapboxgl.Popup({ offset: 16, closeButton: false }).setHTML(
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([p.longitude, p.latitude])
+        .setPopup(new mapboxgl.Popup({ offset: 16, closeButton: false }).setHTML(
           `<div class="popup-name">${p.name}</div>
            <div class="popup-addr">${p.address}</div>
            <div class="popup-order">Stop #${i + 1}${isVisited ? " · ✓ Odwiedzony" : ""}</div>
-           ${legInfo}`
-        );
+           ${legHtml}`
+        ))
+        .addTo(map);
+      markersRef.current.push(marker);
+      bounds.extend([p.longitude, p.latitude]);
+    });
 
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([p.longitude, p.latitude])
-          .setPopup(popup)
-          .addTo(map);
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 800 });
+    }
 
-        markersRef.current.push(marker);
-        bounds.extend([p.longitude, p.latitude]);
-      });
+    // — Route polyline —
+    const source = map.getSource(ROUTE_SOURCE);
+    if (!source) return;
 
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 800 });
-      }
-    };
-
-    if (map.loaded()) ready();
-    else map.once("load", ready);
+    if (route?.geometry) {
+      source.setData({ type: "Feature", geometry: route.geometry });
+    } else {
+      source.setData({ type: "FeatureCollection", features: [] });
+    }
   }, [points, route, start, visitedIds, clearMarkers]);
 
-  // Draw/clear route polyline
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const update = () => {
-      const source = map.getSource(ROUTE_SOURCE);
-      if (!source) return;
-
-      if (route?.geometry) {
-        source.setData({
-          type: "Feature",
-          geometry: route.geometry,
-        });
-      } else {
-        source.setData({ type: "FeatureCollection", features: [] });
-      }
-    };
-
-    if (map.loaded()) update();
-    else map.once("load", update);
-  }, [route]);
+    if (readyRef.current) {
+      drawAll();
+    } else {
+      // Map not yet loaded — wait for it, then draw
+      const onLoad = () => drawAll();
+      map.once("load", onLoad);
+      return () => map.off("load", onLoad);
+    }
+  }, [drawAll]);
 
   return (
     <div className="map-container">
@@ -192,7 +170,6 @@ export default function MapView({ points, route, start, visitedIds, pickingStart
   );
 }
 
-// ── helpers ──
 function fmtDuration(sec) {
   const m = Math.round(sec / 60);
   if (m < 60) return `${m} min`;
