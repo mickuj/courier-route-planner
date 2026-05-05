@@ -26,7 +26,7 @@ The flow is deliberately simple:
 ```
 Browser (React + Mapbox GL JS)
     │
-    ├── GET /api/points?city=X  ──► InPost API (all pages fetched server-side)
+    ├── GET /api/points?city=X  → InPost API (all pages fetched server-side)
     │
     └── POST /api/route { start, points }
             │
@@ -40,7 +40,7 @@ The backend is a thin proxy that (a) aggregates paginated InPost data into a cle
 
 **Nearest-neighbour instead of Mapbox Optimization API** - Mapbox Optimization v1 caps at 12 waypoints. Nearest-neighbour is O(n²), simple to verify, and for ≤25 stops on a city scale the result is good enough. A courier isn't going to notice a 3% suboptimal ordering.
 
-**Backend proxy for InPost pagination** - the InPost API paginates at ~25–100 items per page. The backend fetches all pages silently so the frontend receives a single clean array. This also sidesteps CORS.
+**Backend proxy for InPost pagination** - the InPost API paginates at ~25-100 items per page. The backend fetches all pages silently so the frontend receives a single clean array. This also sidesteps CORS.
 
 **No database, no auth** - this is a shift-planning tool, not a system of record. There is nothing worth persisting between sessions at this scope.
 
