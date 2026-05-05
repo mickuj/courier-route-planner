@@ -46,7 +46,14 @@ The backend is a thin proxy that (a) aggregates paginated InPost data into a cle
 
 ### Screenshots
 
-> *(Add screenshots to a `/docs` folder and link them here before submitting)*
+### Start view
+![Map](docs/image.png)
+
+### Choosing points
+![Route](docs/image2.png)
+
+### Route recommendation
+![Points](docs/image3.png)
 
 ## Technologies
 
