@@ -50,10 +50,13 @@ The backend is a thin proxy that (a) aggregates paginated InPost data into a cle
 ![Map](docs/image.png)
 
 ### Choosing points
-![Route](docs/image2.png)
+![Points](docs/image2.png)
 
 ### Route recommendation
-![Points](docs/image3.png)
+![Route](docs/image3.png)
+
+### Updated route
+![Updated](docs/image4.png)
 
 ## Technologies
 
