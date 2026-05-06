@@ -19,7 +19,7 @@ The flow is deliberately simple:
 2. **Select your stops** - a scrollable checkbox list shows every locker with its address and whether it's 24/7. Filter by name or street. Select up to 25.
 3. **Calculate the route** - the backend sorts the stops using a nearest-neighbour heuristic, then calls the Mapbox Directions API to get a real road route with traffic-aware timing.
 4. **Drive** - the map shows numbered markers and a polyline. The sidebar shows the ordered stop list with per-leg time and distance. Mark each stop as done with the "Zrób" button.
-5. **Recalculate mid-route** - the "🔄 Przelicz od teraz" button grabs your current GPS position and recalculates the optimal route for the remaining unvisited stops.
+5. **Recalculate mid-route** - the "Przelicz od teraz" button grabs your current GPS position and recalculates the optimal route for the remaining unvisited stops.
 
 ### Architecture
 
@@ -132,5 +132,3 @@ Specifically:
 - **MapView component** - Claude generated the Mapbox marker and popup code. I adapted sizing, popup HTML, and bounds-fitting after seeing it render in the browser.
 - **CSS design system** - I described the aesthetic direction (industrial dark theme, InPost yellow) and Claude generated the variables and component styles. I iterated on layout and spacing.
 - **README** - drafted with Claude, rewritten in my own voice.
-
-Every generated file was read line by line. Where something was unfamiliar (e.g. `AbortSignal.timeout()`) I checked the MDN docs before keeping it.
