@@ -124,7 +124,7 @@ Both point to the same Mapbox token. The backend one never reaches the browser. 
 
 ## AI usage
 
-Claude was used throughout - for code generation, architecture discussion, and README drafting.
+Claude was used - for some parts of code generation and architecture discussion.
 
 Specifically:
 - **Backend pagination logic** - I described the InPost API's paging behaviour and Claude wrote the fetch loop. I adjusted the fallback field names (`items` vs `points`) after testing against the real API.
@@ -134,9 +134,3 @@ Specifically:
 - **README** - drafted with Claude, rewritten in my own voice.
 
 Every generated file was read line by line. Where something was unfamiliar (e.g. `AbortSignal.timeout()`) I checked the MDN docs before keeping it.
-
-## Anything else?
-
-The InPost API at `api-global-points.easypack24.net` is publicly accessible without authentication - I confirmed this by exploring it directly before writing any code. The response envelope uses `items` as the array key, and `total_count` drives the pagination loop. Filtering by `type=parcel_locker` on the API side is cleaner than post-filtering - the API supports it and meaningfully reduces payload size for cities with mixed point types.
-
-One deliberate UX choice: if geolocation permission is denied, the route calculation still works - the backend falls back to the centroid of the selected points as the start. The app is fully functional on desktop where GPS isn't available.
