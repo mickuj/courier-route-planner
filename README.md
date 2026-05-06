@@ -120,9 +120,7 @@ Both point to the same Mapbox token. The backend one never reaches the browser. 
 
 **3. Departure time for traffic-aware routing** - Mapbox Directions supports `depart_at`. Useful for morning planning: "I'm leaving at 7:30, what's the fastest order?".
 
-**4. PWA / offline cache** - the locker list for a given city changes slowly. Caching it in a service worker would make the app reliable on spotty mobile data.
-
-**5. 2-opt improvement pass** - replace nearest-neighbour with nearest-neighbour + 2-opt local search. For 25 stops it runs in under a millisecond and can meaningfully shorten the total distance.
+**4. Manual route repositioning** - before recalculating the remaining route, the courier could manually select their current location instead of always recalculating from the original route context or browser geolocation. This would better reflect real-world deviations during a shift.
 
 ## AI usage
 
